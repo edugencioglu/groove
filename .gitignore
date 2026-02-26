@@ -1,0 +1,17 @@
+# Binary
+groove
+
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Test
+*.test
+
+# Claude Code
+.claude/
