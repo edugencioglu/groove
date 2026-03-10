@@ -165,21 +165,27 @@ func cmdDashboard(args []string) error {
 // creating a new tab.
 func ghosttyTabAction(wt discovery.Worktree, projectName string) error {
 	if wt.TabCount > 0 {
-		// Build a path relative to $HOME for matching against Claude Code's
-		// header which shows "~/relative/path".
-		relPath := wt.Path
-		if home, err := os.UserHomeDir(); err == nil {
-			relPath = strings.TrimPrefix(wt.Path, home+"/")
-		}
-		script := tabs.JumpTabScript(projectName, wt.Name, relPath)
-		err := exec.Command("osascript", "-e", script).Run()
-		if err == nil {
+		script := tabs.JumpTabScript(wt.Path)
+		if err := runOsascript(script); err == nil {
 			return nil
 		}
 		// Jump failed — fall back to new tab.
 	}
-	script := tabs.NewTabScript(wt.Path)
-	return exec.Command("osascript", "-e", script).Run()
+	return runOsascript(tabs.NewTabScript(wt.Path))
+}
+
+// runOsascript executes an AppleScript and returns any error with stderr detail.
+func runOsascript(script string) error {
+	cmd := exec.Command("osascript", "-e", script)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		msg := strings.TrimSpace(string(out))
+		if msg != "" {
+			return fmt.Errorf("%s", msg)
+		}
+		return err
+	}
+	return nil
 }
 
 // resolveRoot determines the root directory to scan.

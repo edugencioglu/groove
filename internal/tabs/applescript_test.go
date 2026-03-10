@@ -8,28 +8,32 @@ import (
 func TestNewTabScript(t *testing.T) {
 	script := NewTabScript("/Users/emre/project-a")
 
-	if !strings.Contains(script, `tell application "Ghostty" to activate`) {
+	if !strings.Contains(script, `tell application "Ghostty"`) {
+		t.Error("script should target Ghostty directly")
+	}
+	if !strings.Contains(script, `activate`) {
 		t.Error("script should activate Ghostty")
 	}
-	if !strings.Contains(script, `keystroke "t" using command down`) {
-		t.Error("script should open new tab with Cmd+T")
+	if !strings.Contains(script, `new surface configuration`) {
+		t.Error("script should create surface configuration")
 	}
-	if !strings.Contains(script, `cd /Users/emre/project-a && clear`) {
-		t.Error("script should cd to the worktree path")
+	if !strings.Contains(script, `initial working directory of cfg to "/Users/emre/project-a"`) {
+		t.Error("script should set working directory in config")
 	}
-	if !strings.Contains(script, `key code 36`) {
-		t.Error("script should press Enter")
+	if !strings.Contains(script, `new tab in front window with configuration cfg`) {
+		t.Error("script should create new tab with config")
 	}
-	if !strings.Contains(script, `delay 0.3`) {
-		t.Error("script should include delay for tab to open")
+	// Should NOT use System Events anymore.
+	if strings.Contains(script, `System Events`) {
+		t.Error("script should not use System Events (use native Ghostty API)")
 	}
 }
 
 func TestNewTabScript_PathWithSpaces(t *testing.T) {
 	script := NewTabScript("/Users/emre/my project/src")
 
-	if !strings.Contains(script, `cd /Users/emre/my project/src && clear`) {
-		t.Error("script should preserve spaces in path")
+	if !strings.Contains(script, `initial working directory of cfg to "/Users/emre/my project/src"`) {
+		t.Error("script should preserve spaces in path (handled by AppleScript string)")
 	}
 }
 
@@ -42,52 +46,34 @@ func TestNewTabScript_PathWithQuotes(t *testing.T) {
 }
 
 func TestJumpTabScript(t *testing.T) {
-	script := JumpTabScript("project-a", "feature", "")
+	script := JumpTabScript("/Users/emre/projects/project-a/feature")
 
-	if !strings.Contains(script, `tell application "Ghostty" to activate`) {
+	if !strings.Contains(script, `tell application "Ghostty"`) {
+		t.Error("script should target Ghostty directly")
+	}
+	if !strings.Contains(script, `activate`) {
 		t.Error("script should activate Ghostty")
 	}
-	// Uses `name of` instead of `title of` to avoid Unicode errors with ✳.
-	if !strings.Contains(script, `name of t`) {
-		t.Error("script should use name (not title) to avoid Unicode errors")
+	if !strings.Contains(script, `working directory of term is "/Users/emre/projects/project-a/feature"`) {
+		t.Error("script should match terminal working directory")
 	}
-	if !strings.Contains(script, `tabName contains "project-a"`) {
-		t.Error("script should check for project name")
-	}
-	if !strings.Contains(script, `tabName contains "feature"`) {
-		t.Error("script should check for worktree name")
-	}
-	if !strings.Contains(script, `click t`) {
-		t.Error("script should click matching tab")
-	}
-	if !strings.Contains(script, `perform action "AXRaise"`) {
-		t.Error("script should raise the matching window")
+	if !strings.Contains(script, `focus term`) {
+		t.Error("script should focus the matching terminal")
 	}
 	if !strings.Contains(script, `error "no matching tab found"`) {
 		t.Error("script should error when no tab matches")
 	}
-}
-
-func TestJumpTabScript_HeaderFallback(t *testing.T) {
-	script := JumpTabScript("project-a", "feature", "Documents/projects/project-a/feature")
-
-	// Pass 2: header-based matching reads first 1000 chars of pane content.
-	if !strings.Contains(script, `text 1 thru 1000 of taVal`) {
-		t.Error("script should limit content check to first 1000 chars")
-	}
-	if !strings.Contains(script, `taVal contains "Documents/projects/project-a/feature"`) {
-		t.Error("script should check pane header for relative worktree path")
-	}
-	if !strings.Contains(script, `group 1 of group 1 of front window`) {
-		t.Error("script should use fresh front window ref for content area")
+	// Should NOT use System Events anymore.
+	if strings.Contains(script, `System Events`) {
+		t.Error("script should not use System Events (use native Ghostty API)")
 	}
 }
 
-func TestJumpTabScript_LabelWithQuotes(t *testing.T) {
-	script := JumpTabScript("proj", `"special"`, "")
+func TestJumpTabScript_PathWithQuotes(t *testing.T) {
+	script := JumpTabScript(`/Users/emre/it's "special"`)
 
-	if !strings.Contains(script, `tabName contains "\"special\""`) {
-		t.Error("script should escape quotes in label")
+	if !strings.Contains(script, `working directory of term is "/Users/emre/it's \"special\""`) {
+		t.Error("script should escape quotes in path")
 	}
 }
 
